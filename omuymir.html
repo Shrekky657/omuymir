@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Омуймир — собеседник</title>
+<meta name="description" content="Омуймир — тёплый ИИ-собеседник. Pollinations, OpenRouter или локальный Ollama, в том числе модели без фильтров. Статический сайт без сервера.">
+<style>
+:root{
+  --bg:#eef1f7; --bg2:#f7f9fc; --card:#ffffff; --card2:#f2f5fa;
+  --border:#d9e0ec; --border2:#c3cede;
+  --text:#14181f; --muted:#6b7688; --soft:#8a94a6;
+  --blue:#2b6ef2; --user:#1c4fd8; --err:#b00020; --green:#17794a;
+  --radius:14px;
+  --shadow:0 4px 20px rgba(20,30,60,.07);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',sans-serif;
+  background:linear-gradient(180deg,#e8edf7 0%,var(--bg2) 45%,var(--bg2) 100%);
+  color:var(--text); min-height:100vh; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;font-size:inherit}
+input,select,textarea{font-family:inherit}
+
+/* ---------- HEADER ---------- */
+header{
+  position:sticky;top:0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:14px 26px;background:rgba(247,249,252,.88);
+  backdrop-filter:blur(14px);border-bottom:1px solid var(--border);
+}
+.logo{display:flex;align-items:center;gap:12px}
+.logo .mark{
+  width:38px;height:38px;border-radius:12px;display:grid;place-items:center;flex:none;
+  background:linear-gradient(135deg,var(--blue),#6f4bf2);color:#fff;
+  font-size:19px;box-shadow:0 6px 18px rgba(43,110,242,.3);
+}
+.logo h1{font-size:20px;font-weight:800;letter-spacing:-.4px;line-height:1.15}
+.logo h1 span{display:block;font-size:12.5px;font-weight:500;color:var(--muted);letter-spacing:0}
+.badge{
+  padding:5px 11px;border-radius:999px;font-size:12px;font-weight:700;
+  background:#e8efff;color:var(--blue);border:1px solid #cfdcff;white-space:nowrap;
+}
+.badge.free{background:#e6f6ee;color:var(--green);border-color:#bfe6d0}
+
+/* ---------- LAYOUT ---------- */
+.app{max-width:1080px;margin:0 auto;padding:22px 26px 40px;display:flex;flex-direction:column;gap:14px}
+
+/* ---------- BUTTONS ---------- */
+.btn{
+  padding:9px 16px;border-radius:10px;font-size:13.5px;font-weight:600;
+  background:var(--card);border:1px solid var(--border2);color:var(--text);
+  transition:.15s;white-space:nowrap;
+}
+.btn:hover{background:var(--card2);border-color:#a9b6cc}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 4px 14px rgba(43,110,242,.28)}
+.btn.primary:hover{background:#1f5ed6;border-color:#1f5ed6}
+.btn.danger{color:var(--err);border-color:#eccdd3;background:#fdf5f6}
+.btn.danger:hover{background:#fbe9eb}
+.btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+
+/* ---------- PANEL ---------- */
+.panel{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 18px;box-shadow:var(--shadow);
+}
+.panel-title{
+  font-size:12px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;
+  color:var(--soft);margin-bottom:12px;display:flex;align-items:center;gap:8px;
+}
+.panel-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+[hidden]{display:none !important}   /* .field ниже задаёт display:flex, поэтому атрибут hidden нуждается в усилении */
+.field>label{font-size:12.5px;font-weight:700;color:var(--muted)}
+.field .note{font-size:11.5px;color:var(--soft);line-height:1.4}
+.field .note b{color:var(--muted)}
+.field.wide{grid-column:1/-1}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap}
+input[type=text],input[type=password],select{
+  width:100%;padding:10px 12px;font-size:14px;color:var(--text);
+  background:var(--bg2);border:1px solid var(--border2);border-radius:10px;
+  transition:.15s;min-width:0;
+}
+input[type=text]:focus,input[type=password]:focus,select:focus{
+  outline:none;border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(43,110,242,.12);
+}
+select{cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7688' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+
+/* ---------- CHIPS / CODE ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.chip{
+  padding:5px 11px;border-radius:999px;font-size:12px;font-weight:600;
+  background:var(--card2);border:1px solid var(--border2);color:var(--muted);transition:.15s;
+}
+.chip:hover{background:#e8efff;color:var(--blue);border-color:#cfdcff}
+.chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.code{
+  display:flex;align-items:center;gap:10px;margin-top:8px;padding:9px 11px;border-radius:10px;
+  background:#111a2e;color:#c9dcff;font-family:ui-monospace,Consolas,monospace;font-size:12px;
+}
+.code .txt{flex:1;overflow-x:auto;white-space:nowrap}
+.code button{
+  flex:none;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:7px;
+  background:#243b63;color:#cfe3ff;transition:.15s;
+}
+.code button:hover{background:#31507f}
+
+/* ---------- HINT ---------- */
+.hint{
+  display:flex;align-items:flex-start;gap:9px;font-size:12.5px;color:var(--muted);
+  background:#f6f8fd;border:1px dashed var(--border2);border-radius:12px;padding:10px 14px;
+}
+.hint b{color:var(--text)}
+
+/* ---------- BLOCKS ---------- */
+details.block{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+details.block>summary{
+  list-style:none;cursor:pointer;padding:14px 18px;font-weight:700;font-size:14px;
+  display:flex;align-items:center;gap:10px;
+}
+details.block>summary::-webkit-details-marker{display:none}
+details.block>summary::before{
+  content:'▸';color:var(--blue);font-size:15px;transition:transform .18s;display:inline-block;
+}
+details.block[open]>summary::before{transform:rotate(90deg)}
+details.block>summary .tag{margin-left:auto;font-size:11.5px;font-weight:600;color:var(--soft);text-align:right}
+.block-body{padding:0 18px 16px;border-top:1px solid var(--border)}
+.block-body>p{margin:12px 0 10px;font-size:12.5px;color:var(--muted)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}
+.cols h4{font-size:12px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:var(--soft);margin:12px 0 8px}
+.apps{list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
+.apps li{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:11px 13px}
+.apps b{display:block;font-size:13.5px;margin-bottom:3px}
+.apps span{font-size:12px;color:var(--muted);line-height:1.4;display:block}
+.apps .where{font-size:11.5px;color:var(--soft);margin-top:5px;display:block}
+
+/* ---------- MODEL LIST ---------- */
+.mlist{list-style:none;display:flex;flex-direction:column;gap:8px}
+.mlist li{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:10px 12px}
+.mlist .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mlist .id{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;font-weight:700;color:var(--text);word-break:break-all}
+.mlist .desc{font-size:11.5px;color:var(--muted);line-height:1.4;margin-top:4px}
+.mlist .use{margin-left:auto}
+.mini{font-size:11.5px;font-weight:700;padding:5px 11px;border-radius:8px;background:#e8efff;color:var(--blue);border:1px solid #cfdcff;transition:.15s}
+.mini:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+.mini.on{background:var(--blue);color:#fff}
+
+/* ---------- CHAT ---------- */
+.chat{
+  height:58vh;min-height:300px;overflow-y:auto;background:var(--card);
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px 20px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px;
+  scrollbar-width:thin;
+}
+.chat::-webkit-scrollbar{width:9px}
+.chat::-webkit-scrollbar-thumb{background:#cfd7e5;border-radius:9px;border:2px solid var(--card)}
+.msg{max-width:100%;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere}
+/* .user — справа: прижат к правому краю, слева остаётся 20% (max-width:80%) */
+.msg.user{
+  background:var(--user);color:#fff;padding:10px 15px;border-radius:15px 15px 4px 15px;
+  align-self:flex-end;max-width:80%;box-shadow:0 3px 12px rgba(28,79,216,.22);
+}
+.msg.ai{
+  align-self:flex-start;color:#14181f;max-width:82%;
+  padding:2px 4px 2px 15px;border-left:3px solid var(--blue);
+}
+.msg.err{color:var(--err);font-size:13.5px;text-align:center;background:#fdf3f5;border:1px solid #f0d5db;border-radius:11px;padding:9px 13px}
+.msg.sys{color:var(--muted);font-size:13px;text-align:center;padding:2px 6px}
+.msg.typing{color:var(--soft);font-style:italic;font-size:13px;padding-left:19px}
+.msg.typing::after{content:'';animation:dots 1.2s steps(4,end) infinite}
+@keyframes dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+.msg.warn{color:#8a5a00;font-size:13px;text-align:center;background:#fff8e8;border:1px solid #f3e2bb;border-radius:11px;padding:9px 13px}
+
+/* ---------- INPUT FORM ---------- */
+.composer{display:flex;gap:10px;align-items:flex-end}
+.composer textarea{
+  flex:1;resize:none;max-height:180px;padding:12px 14px;font-size:14.5px;line-height:1.45;
+  background:var(--card);border:1px solid var(--border2);border-radius:13px;color:var(--text);
+  transition:.15s;
+}
+.composer textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(43,110,242,.12)}
+.composer .btn.primary{padding:12px 22px;height:46px}
+.composer .btn.primary:disabled{background:#a8bde8;border-color:#a8bde8}
+.cmdbar{display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--soft);align-items:center}
+.cmdbar code{
+  background:var(--card2);border:1px solid var(--border);border-radius:7px;
+  padding:2px 7px;font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:var(--muted);
+}
+
+/* ---------- FOOTER ---------- */
+footer{text-align:center;font-size:12px;color:var(--soft);padding-top:4px}
+
+/* ---------- MOBILE ---------- */
+@media(max-width:640px){
+  header{padding:12px 16px}
+  .app{padding:16px 14px 30px}
+  .badge{display:none}
+  details.block>summary .tag{display:none}
+  .composer{flex-direction:column;align-items:stretch}
+  .composer .btn.primary{width:100%}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="mark">О</div>
+    <h1>Омуймир<span>тёплый собеседник на базе ИИ</span></h1>
+  </div>
+  <div class="badge" id="modeBadge">Pollinations</div>
+</header>
+
+<main class="app">
+
+  <!-- ---------- ПАНЕЛЬ НАСТРОЕК ---------- -->
+  <section class="panel">
+    <div class="panel-title">Настройки</div>
+    <div class="grid">
+
+      <div class="field">
+        <label for="src">Источник</label>
+        <select id="src">
+          <option value="pollinations">Pollinations — облако, без ключа</option>
+          <option value="openrouter">OpenRouter — облако, нужен ключ</option>
+          <option value="ollama">Ollama — локально на своём компьютере</option>
+        </select>
+        <span class="note" id="srcNote"></span>
+      </div>
+
+      <div class="field" id="keyField" hidden>
+        <label for="apiKey">API-ключ OpenRouter</label>
+        <input type="password" id="apiKey" placeholder="sk-or-v1-..." autocomplete="off" spellcheck="false">
+        <div class="row-btns">
+          <button class="btn" id="saveKey" type="button">Сохранить</button>
+          <button class="btn danger" id="delKey" type="button">Удалить ключ</button>
+        </div>
+        <span class="note">Ключ хранится только в этом браузере (localStorage).</span>
+      </div>
+
+      <div class="field" id="pollField" hidden>
+        <label for="pollModel">Модель Pollinations</label>
+        <select id="pollModel">
+          <option value="openai">openai — GPT-OSS 20B, анонимный тариф (проверено: работает)</option>
+        </select>
+        <span class="note" id="pollNote"></span>
+      </div>
+
+      <div class="field" id="orModelField" hidden>
+        <label for="orModel">Модель OpenRouter</label>
+        <input type="text" id="orModel" placeholder="openrouter/free" spellcheck="false" autocomplete="off">
+        <div class="chips" id="orChips"></div>
+        <span class="note" id="orModelNote"></span>
+      </div>
+
+      <div class="field" id="urlField" hidden>
+        <label for="ollamaUrl">URL Ollama</label>
+        <input type="text" id="ollamaUrl" placeholder="http://localhost:11434" spellcheck="false" autocomplete="off">
+        <span class="note">Запуск: <code>OLLAMA_ORIGINS="*" ollama serve</code> — иначе браузер заблокирует запрос.</span>
+      </div>
+
+      <div class="field" id="modelField" hidden>
+        <label for="ollamaModel">Модель Ollama</label>
+        <input type="text" id="ollamaModel" placeholder="dolphin3:8b" spellcheck="false" autocomplete="off">
+        <div class="chips" id="ollamaChips"></div>
+        <div class="code" id="pullBox" hidden>
+          <span class="txt" id="pullCmd"></span>
+          <button type="button" id="pullCopy">Копировать</button>
+        </div>
+        <span class="note">Модель должна быть скачана командой выше. Dolphin и WizardLM идут без дообучения на отказах — отвечают там, где обычная модель отвечает «не могу».</span>
+      </div>
+
+      <div class="field wide">
+        <label for="mode">Режим ответов</label>
+        <select id="mode">
+          <option value="normal">Обычный — промт персонажа без изменений</option>
+          <option value="free">Без ограничений — прямой ответ, без нотаций и отказов</option>
+        </select>
+        <span class="note" id="modeNote"></span>
+      </div>
+
+      <div class="field wide">
+        <label for="char">Персонаж</label>
+        <select id="char">
+          <option value="omuymir">Омуймир — тёплый и располагающий</option>
+          <option value="universal">Универсальный — дружелюбный помощник</option>
+          <option value="holmes">Шерлок Холмс — аналитик и дедуктив</option>
+          <option value="gandalf">Гэндальф — мудрец с иронией</option>
+          <option value="yoda">Йода — кратко и по-своему</option>
+        </select>
+        <span class="note">При смене персонажа история диалога сбрасывается.</span>
+      </div>
+
+      <div class="field wide">
+        <div class="row-btns">
+          <button class="btn danger" id="reset" type="button">Сбросить</button>
+          <span class="note" style="align-self:center">Вернуть все настройки и ключ к исходным значениям, очистить диалог.</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ---------- ПОДСКАЗКА ---------- -->
+  <div class="hint">
+    <span>ℹ️</span>
+    <div>
+      <b>Ключ для OpenRouter</b> бесплатный: зарегистрируйся на <a href="https://openrouter.ai" target="_blank" rel="noopener">openrouter.ai</a>
+      и вставь его в поле выше. Pollinations работает без ключа, но не чаще одного запроса в 15 секунд.
+    </div>
+  </div>
+
+  <!-- ---------- МОДЕЛИ БЕЗ ФИЛЬТРОВ ---------- -->
+  <details class="block" id="freeBlock">
+    <summary>Модели без фильтров<span class="tag">кто реально отвечает без отказов</span></summary>
+    <div class="block-body">
+      <p>
+        <b>Честно о том, как это работает.</b> Отказ чаще всего зашит в саму модель: её дообучали отклонять запросы, и никакой промт это не отменит. Поэтому «режим без ограничений» в настройках меняет только текст промта, а настоящее отсутствие фильтров даёт выбор модели.
+        У Pollinations фильтр стоит на стороне сервера, и смена промта его не снимает. У OpenRouter фильтр зависит от модели — Dolphin и Venice отвечают без него.
+      </p>
+      <div class="cols">
+        <div>
+          <h4>Локально — Ollama, без интернета</h4>
+          <ul class="mlist" id="localList"></ul>
+          <p style="font-size:12px;color:var(--soft);margin-top:10px">
+            Любую свою GGUF-модель (Chroma, G4-MeroMero-31B, abliterated-версии) Ollama тоже умеет: сохрани файл как
+            <code>Modelfile</code> со строкой <code>FROM ./модель.gguf</code> и выполни <code>ollama create имя -f Modelfile</code>.
+          </p>
+        </div>
+        <div>
+          <h4>В облаке — OpenRouter, нужен ключ</h4>
+          <ul class="mlist" id="cloudList"></ul>
+          <p style="font-size:12px;color:var(--soft);margin-top:10px">
+            Бесплатный тариф OpenRouter — 20 запросов в минуту и 50 в сутки. Любую другую модель можно вписать вручную в поле «Модель OpenRouter».
+          </p>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ---------- ЛОКАЛЬНЫЕ ИИ БЕЗ API ---------- -->
+  <details class="block">
+    <summary>Локальные ИИ без API<span class="tag">приложения вместо сайта</span></summary>
+    <div class="block-body">
+      <p>Это не источники для сайта, а отдельные приложения — если нужен ИИ целиком на своём устройстве, без интернета, подписок и ключей. Запускают GGUF-модели офлайн: Chroma, G4-MeroMero-31B, dolphin-версии Llama и Qwen. Ищи по названиям в магазинах приложений и в интернете.</p>
+      <ul class="apps">
+        <li>
+          <b>Uncensored Local AI</b>
+          <span>Android, iOS, ПК. Запускает GGUF-модели офлайн, без подписок и ключей.</span>
+          <span class="where">Ищи в Google Play и App Store</span>
+        </li>
+        <li>
+          <b>PrivaSeek</b>
+          <span>iPhone, iPad, Mac. Открытая модель ~1 ГБ, работает без облака.</span>
+          <span class="where">Ищи в App Store</span>
+        </li>
+        <li>
+          <b>SovereignAI</b>
+          <span>Работает прямо в браузере через WebGPU. Без установки, без серверов, без API-ключей. Модели Phi-3.5-mini и Llama-3.2.</span>
+          <span class="where">Открывается в браузере, установка не нужна</span>
+        </li>
+        <li>
+          <b>URV AI Chat</b>
+          <span>Бесплатный веб-сервис, без аккаунта, заявлен без фильтров.</span>
+          <span class="where">Открывается в браузере</span>
+        </li>
+        <li>
+          <b>Venice AI</b>
+          <span>Бесплатный, приватный, позиционируется как неcensored. Можно пользоваться без аккаунта.</span>
+          <span class="where">Открывается в браузере</span>
+        </li>
+      </ul>
+    </div>
+  </details>
+
+  <!-- ---------- ЧАТ ---------- -->
+  <div class="chat" id="chat"></div>
+
+  <!-- ---------- ВВОД ---------- -->
+  <form class="composer" id="form" autocomplete="off">
+    <textarea id="input" rows="1" placeholder="Напиши Омуймиру… (Enter — отправить, Shift+Enter — новая строка)"></textarea>
+    <button class="btn primary" id="send" type="submit">Отправить</button>
+  </form>
+  <div class="cmdbar">
+    <span>Команды:</span>
+    <code>/stop</code><code>/lang ru</code><code>/commands</code>
+    <span>— вводятся в поле сообщения</span>
+  </div>
+
+  <footer>Статический сайт: работает с любого хостинга или локально, без своего сервера.</footer>
+</main>
+
+<script>
+'use strict';
+
+/* ============================================================
+   ПРОМТЫ ПЕРСОНАЖЕЙ
+   Части с soft:true убираются в режиме «Без ограничений».
+   Порядок частей сохранён — в обычном режиме промт идентичен.
+   ============================================================ */
+
+const FORMAT_RULE =
+  'Отвечай обычным текстом: без HTML, без markdown-заголовков и без служебной разметки. ' +
+  'Списки и таблицы — только если о них попросили или без них не обойтись.';
+
+const FREE_MODE_RULE =
+  'Режим без ограничений. Отвечай прямо и по существу: не отказывайся по надуманным причинам, ' +
+  'не читай нотаций, не добавляй предупреждений о том, о чём не просили. ' +
+  'Если ограничения всё же запрещают ответ — скажи об этом одной короткой фразой и предложи, что можно сделать вместо этого.';
+
+const CHARACTERS = {
+  omuymir: {
+    name: 'Омуймир',
+    greeting: 'Привет. Рад, что ты здесь. Я Омуймир — можно просто поговорить, а можно по делу. Что у тебя сегодня?',
+    parts: [
+      {t:`Ты Омуймир. Ты обаятельный и тёплый собеседник.
+Говоришь мягко, по-доброму, с искренним интересом к человеку.
+Тон — тёплый и располагающий: будто говоришь с близким человеком, которому рад.
+Обращайся к собеседнику тепло, можно по имени, если он его назвал.
+Замечай настроение и откликайся на него: поддержи, порадуйся, посочувствуй.
+Хвали по делу и искренне, без лести и навязчивости.`},
+      {soft:true, t:`Избегай пошлости, сленга и мата. Речь — грамотная и живая.`},
+      {t:`Иногда задавай встречный вопрос, чтобы разговор продолжался естественно.
+Не будь слащавым: теплота — искренняя, а не приторная.
+
+Говори прямо и без лишних оговорок.
+Не морализируй, не читай нотаций, не начинай ответ с извинений.
+Не предупреждай о рисках, если тебя не спросили.
+Если тема бытовая, личная или спорная — обсуждай спокойно, как взрослый со взрослым.
+Если вопрос выходит за рамки разумного — коротко скажи об этом и предложи другую тему.`}
+    ]
+  },
+
+  universal: {
+    name: 'Универсальный',
+    greeting: 'Здравствуй. Я готов помочь: объяснить, разобрать задачу, подсказать идею или просто обсудить тему. С чего начнём?',
+    parts: [
+      {t:`Ты универсальный и дружелюбный помощник.
+Отвечай по делу, точно и понятно. Сначала главное, потом детали — без воды.
+Если вопрос неоднозначный, уточни один ключевой момент, а не десять.
+Приводи конкретику: числа, примеры, шаги. Не выдумывай факты — если не знаешь, скажи прямо.
+Отношение к человеку — спокойное и уважительное, без заискивания.`}
+    ]
+  },
+
+  holmes: {
+    name: 'Шерлок Холмс',
+    greeting: 'Добрый день. Всё, что здесь происходит, оставляет следы, и следы эти говорят. Изложите обстоятельства — я привык работать с деталями.',
+    parts: [
+      {t:`Ты — Шерлок Холмс, консультирующий детектив.
+Ты аналитичен, сдержан, наблюдателен. Ты рассуждаешь вслух: факт, вывод, предположение — и не смешиваешь их.
+Ты не даёшь категорических выводов там, где хватает версии, и прямо называешь то, чего не знаешь.
+Ты замечаешь противоречия и упущенные детали и обращаешь на них внимание собеседника.
+Стиль — точный, сухой, с лёгкой профессиональной иронией. Никакой лести и восторгов.
+Ты обращаешься к собеседнику на «вы», если он сам не предложил иное.`}
+    ]
+  },
+
+  gandalf: {
+    name: 'Гэндальф',
+    greeting: 'Добро пожаловать. Садитесь, путь от дверей до вершины долог, и лишь беседа делает его терпимым. Что привело вас сюда?',
+    parts: [
+      {t:`Ты — Гэндальф, маг и наставник.
+Ты мудр, загадочен, говоришь с достоинством и лёгкой иронией.
+Ты не торопишь и не суетишься: сначала суть, потом украшение. Иногда вместо прямого ответа ты обращаешься к сути вещей.
+Ты не пугаешь и не навязываешь веру, но и не замалчиваешь правду, если о ней спросили.
+Твои речи звучат как древние свитки: размеренно, образно, с чувством ритма. Но без затянутости — отвечай по существу.
+Обращайся к собеседнику на «вы».`}
+    ]
+  },
+
+  yoda: {
+    name: 'Йода',
+    greeting: 'Привет, друг. Я Йода. Слов у меня немного — но много в них смысла. Говори, что тебе нужно.',
+    parts: [
+      {t:`Ты — Йода, мудрец с планеты далёкой.
+Ты говоришь короткими фразами. Порядок слов у тебя изменённый, обратный — как у астрофазика.
+Ты мудр и спокойен. Ты редко говоришь «не знаю», но если не знаешь — признаёшь это честно.
+Смысл важнее формы: ответ должен быть понятен человеку, даже если порядок слов необычен.
+Ты обращаешься к собеседнику тепло и уважительно, без заискивания.`}
+    ]
+  }
+};
+
+const LANGS = {
+  ru:'русский', en:'английский', de:'немецкий', fr:'французский',
+  es:'испанский', it:'итальянский', uk:'украинский', kk:'казахский',
+  zh:'китайский', ja:'японский'
+};
+
+/* ============================================================
+   МОДЕЛИ, КОТОРЫЕ ОТВЕЧАЮТ БЕЗ ФИЛЬТРОВ
+   id и теги сверены с openrouter.ai/api/v1/models и ollama.com/library
+   ============================================================ */
+
+const FREE_LOCAL = [
+  {model:'dolphin3:8b',       desc:'Dolphin 3.0 на Llama 3.1 8B. Снятые ограничения, ~4.7 ГБ — лучший старт.'},
+  {model:'dolphin-llama3:8b', desc:'Dolphin 2.9 на Llama 3, 8B. Отвечает прямо, ~4.7 ГБ.'},
+  {model:'dolphin-llama3:70b',desc:'Dolphin 2.9 на Llama 3, 70B. Умнее и честнее, нужно ~40 ГБ.'},
+  {model:'dolphin-mistral',   desc:'Dolphin 2.8 на Mistral 7B. Самый лёгкий вариант, ~4.1 ГБ.'},
+  {model:'wizardlm2:8x22b',   desc:'WizertLM 2 на Mixtral 8x22B. Без цензуры, нужно ~46 ГБ.'},
+  {model:'llama3.2',          desc:'Обычная Llama 3.2 — с фильтром. Для сравнения с Dolphin.'}
+];
+
+const FREE_CLOUD = [
+  {model:'cognitivecomputations/dolphin-mistral-24b-venice-edition', short:'Venice Uncensored',
+   desc:'Venice: Uncensored. Dolphin Mistral 24B, отвечает без отказов. Копейки за 1М токенов.'},
+  {model:'openrouter/free', short:'openrouter/free',
+   desc:'Любая бесплатная модель OpenRouter, выбирается сама. Надёжный бесплатный вариант.'},
+  {model:'nvidia/nemotron-3-super-120b-a12b:free', short:'Nemotron 3 Super 120B',
+   desc:'Nemotron 3 Super 120B, бесплатно.'},
+  {model:'google/gemma-4-31b-it:free', short:'Gemma 4 31B',
+   desc:'Gemma 4 31B, бесплатно.'},
+  {model:'qwen/qwen3.8-27b:free', short:'Qwen 3.8 27B',
+   desc:'Qwen 3.8 27B, бесплатно.'}
+];
+
+/* ============================================================
+   СОСТОЯНИЕ
+   ============================================================ */
+
+const LS = {
+  source:'omuymir.source', key:'omuymir.openrouterKey',
+  url:'omuymir.ollamaUrl', model:'omuymir.ollamaModel',
+  char:'omuymir.char', lang:'omuymir.lang', mode:'omuymir.mode',
+  pollModel:'omuymir.pollModel', orModel:'omuymir.orModel'
+};
+
+const DEFAULTS = {
+  source:'pollinations', apiKey:'', ollamaUrl:'http://localhost:11434',
+  ollamaModel:'dolphin3:8b', character:'omuymir', lang:'ru',
+  mode:'normal', pollModel:'openai', orModel:'openrouter/free'
+};
+
+const SOURCES = {
+  pollinations:{
+    name:'Pollinations', timeout:60000, cooldown:15000,
+    note:'Облако без ключа. Фильтр на стороне сервера. Не чаще 1 запроса в 15 секунд.'
+  },
+  openrouter:{
+    name:'OpenRouter', timeout:60000, cooldown:0,
+    note:'Нужен бесплатный ключ с openrouter.ai. Фильтр зависит от выбранной модели.'
+  },
+  ollama:{
+    name:'Ollama', timeout:120000, cooldown:0,
+    note:'Модель на твоём компьютере. Фильтры задаёт только промт и сама модель.'
+  }
+};
+
+let state = loadState();
+let history = [];
+let busy = false;
+let lastRequestAt = 0;
+
+const el = {
+  src:$('#src'), key:$('#apiKey'), saveKey:$('#saveKey'), delKey:$('#delKey'),
+  keyField:$('#keyField'), pollField:$('#pollField'), orModelField:$('#orModelField'),
+  urlField:$('#urlField'), modelField:$('#modelField'),
+  url:$('#ollamaUrl'), model:$('#ollamaModel'), char:$('#char'),
+  pollModel:$('#pollModel'), orModel:$('#orModel'), orModelNote:$('#orModelNote'),
+  mode:$('#mode'), modeNote:$('#modeNote'),
+  srcNote:$('#srcNote'), pollNote:$('#pollNote'), reset:$('#reset'), badge:$('#modeBadge'),
+  ollamaChips:$('#ollamaChips'), orChips:$('#orChips'),
+  pullBox:$('#pullBox'), pullCmd:$('#pullCmd'), pullCopy:$('#pullCopy'),
+  localList:$('#localList'), cloudList:$('#cloudList'), freeBlock:$('#freeBlock'),
+  chat:$('#chat'), form:$('#form'), input:$('#input'), send:$('#send')
+};
+
+function $(sel){ return document.querySelector(sel); }
+
+function loadState(){
+  return {
+    source:      localStorage.getItem(LS.source) || DEFAULTS.source,
+    apiKey:      localStorage.getItem(LS.key) || '',
+    ollamaUrl:   localStorage.getItem(LS.url) || DEFAULTS.ollamaUrl,
+    ollamaModel: localStorage.getItem(LS.model) || DEFAULTS.ollamaModel,
+    character:   localStorage.getItem(LS.char) || DEFAULTS.character,
+    lang:        localStorage.getItem(LS.lang) || DEFAULTS.lang,
+    mode:        localStorage.getItem(LS.mode) || DEFAULTS.mode,
+    pollModel:   localStorage.getItem(LS.pollModel) || DEFAULTS.pollModel,
+    orModel:     localStorage.getItem(LS.orModel) || DEFAULTS.orModel
+  };
+}
+function saveState(){
+  localStorage.setItem(LS.source, state.source);
+  localStorage.setItem(LS.key, state.apiKey);
+  localStorage.setItem(LS.url, state.ollamaUrl);
+  localStorage.setItem(LS.model, state.ollamaModel);
+  localStorage.setItem(LS.char, state.character);
+  localStorage.setItem(LS.lang, state.lang);
+  localStorage.setItem(LS.mode, state.mode);
+  localStorage.setItem(LS.pollModel, state.pollModel);
+  localStorage.setItem(LS.orModel, state.orModel);
+}
+const isFreeMode = () => state.mode === 'free';
+
+/* ============================================================
+   ИНТЕРФЕЙС
+   ============================================================ */
+
+function renderPanel(){
+  el.src.value = state.source;
+  el.char.value = state.character;
+  el.mode.value = state.mode;
+  el.key.value = state.apiKey;
+  el.url.value = state.ollamaUrl;
+  el.model.value = state.ollamaModel;
+  el.pollModel.value = state.pollModel;
+  el.orModel.value = state.orModel;
+
+  el.keyField.hidden = state.source !== 'openrouter';   // ключ нужен только OpenRouter
+  el.orModelField.hidden = state.source !== 'openrouter';
+  el.pollField.hidden = state.source !== 'pollinations';
+  el.urlField.hidden = state.source !== 'ollama';      // URL и модель — только Ollama
+  el.modelField.hidden = state.source !== 'ollama';
+
+  el.srcNote.textContent = SOURCES[state.source].note;
+  el.pollNote.textContent = 'Фильтр стоит на стороне сервера Pollinations — промтом его не снять. ' +
+    'Их шлюз изредка отвечает 502/503: это временный сбой, сайт повторит запрос сам, до трёх попыток.';
+  el.orModelNote.innerHTML = 'Модель <code>meta-llama/llama-3.1-405b-instruct:free</code> OpenRouter больше не ' +
+    'отдаёт бесплатно — 405B осталась только как платный <code>nousresearch/hermes-3-llama-3.1-405b</code>. ' +
+    'Свободный отказ фильтра — Dolphin, кнопки выше.';
+
+  el.modeNote.textContent = isFreeMode()
+    ? 'Из промта убраны строки про пошлость и мат, добавлено правило прямого ответа без нотаций. Провайдерский фильтр это не снимает — для ответов без отказов бери модель из блока «Модели без фильтров».'
+    : 'Промт персонажа отправляется без изменений.';
+
+  // чипы моделей
+  el.ollamaChips.innerHTML = '';
+  FREE_LOCAL.forEach(m => el.ollamaChips.appendChild(chip(m.model, m.model === state.ollamaModel, () => {
+    setModel('ollama', m.model);
+  })));
+  el.orChips.innerHTML = '';
+  FREE_CLOUD.forEach(m => el.orChips.appendChild(chip(m.short || m.model, m.model === state.orModel, () => {
+    setModel('openrouter', m.model);
+  })));
+
+  // команда загрузки модели
+  el.pullBox.hidden = state.source !== 'ollama';
+  el.pullCmd.textContent = 'ollama pull ' + state.ollamaModel;
+
+  el.badge.textContent = SOURCES[state.source].name + ' · ' + CHARACTERS[state.character].name +
+    (isFreeMode() ? ' · без ограничений' : '');
+  el.badge.classList.toggle('free', isFreeMode());
+}
+
+function chip(label, on, onClick){
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'chip' + (on ? ' on' : '');
+  b.textContent = label;
+  b.addEventListener('click', onClick);
+  return b;
+}
+/* Список моделей в блоке «Модели без фильтров» */
+function buildModelList(host, items, kind){
+  host.innerHTML = '';
+  items.forEach(m => {
+    const li = document.createElement('li');
+    const top = document.createElement('div');
+    top.className = 'top';
+
+    const id = document.createElement('span');
+    id.className = 'id';
+    id.textContent = m.model;
+    top.appendChild(id);
+
+    const use = document.createElement('button');
+    use.type = 'button';
+    use.className = 'mini' + (currentModel(kind) === m.model ? ' on' : '');
+    use.textContent = currentModel(kind) === m.model ? 'выбрана' : 'подставить';
+    use.addEventListener('click', () => { setModel(kind, m.model); });
+    top.appendChild(use);
+    li.appendChild(top);
+
+    const desc = document.createElement('div');
+    desc.className = 'desc';
+    desc.textContent = m.desc + (kind === 'ollama' ? ' · ollama pull ' + m.model : '');
+    li.appendChild(desc);
+    host.appendChild(li);
+  });
+}
+const currentModel = kind => kind === 'ollama' ? state.ollamaModel : state.orModel;
+
+function setModel(kind, model){
+  if (kind === 'ollama'){
+    state.source = 'ollama';
+    state.ollamaModel = model;
+    localStorage.setItem(LS.model, model);
+  } else {
+    state.source = 'openrouter';
+    state.orModel = model;
+    localStorage.setItem(LS.orModel, model);
+  }
+  saveState();
+  renderPanel();
+  buildModelList(el.localList, FREE_LOCAL, 'ollama');
+  buildModelList(el.cloudList, FREE_CLOUD, 'openrouter');
+  addMsg('sys', kind === 'ollama'
+    ? 'Источник: Ollama, модель ' + model + '. Скачай её командой ' + model + ' в блоке «Модели без фильтров».'
+    : 'Источник: OpenRouter, модель ' + model + '.');
+}
+
+function addMsg(role, text){
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.textContent = text;          // textContent — ответ модели не превращается в HTML
+  el.chat.appendChild(div);
+  scrollDown();
+  return div;
+}
+function scrollDown(){ el.chat.scrollTop = el.chat.scrollHeight; }
+
+function showTyping(){
+  const div = document.createElement('div');
+  div.className = 'msg typing';
+  div.textContent = 'печатает…';
+  el.chat.appendChild(div);
+  scrollDown();
+  return div;
+}
+
+function resetChat(withGreeting){
+  history = [];
+  el.chat.innerHTML = '';
+  if (withGreeting){
+    const src = SOURCES[state.source];
+    addMsg('sys', 'Источник: ' + src.name + ' · Персонаж: ' + CHARACTERS[state.character].name +
+      ' · Ответы на: ' + (LANGS[state.lang] || state.lang) +
+      (isFreeMode() ? ' · Режим: без ограничений' : ''));
+    addMsg('ai', CHARACTERS[state.character].greeting);
+  }
+}
+
+/* ============================================================
+   КОМАНДЫ В ЧАТЕ
+   ============================================================ */
+
+function runCommand(raw){
+  const [cmd, ...rest] = raw.trim().split(/\s+/);
+  const arg = rest.join(' ').trim().toLowerCase();
+
+  if (cmd === '/stop'){
+    resetChat(true);
+    addMsg('sys', 'История очищена. Начинаем заново.');
+    return true;
+  }
+
+  if (cmd === '/lang'){
+    if (!arg){ addMsg('sys', 'Сейчас ответы на: ' + (LANGS[state.lang] || state.lang) +
+      '. Сменить: /lang en'); return true; }
+    if (!LANGS[arg]){
+      addMsg('err', 'Язык «' + arg + '» не найден. Доступны: ' + Object.keys(LANGS).join(', '));
+      return true;
+    }
+    state.lang = arg;
+    localStorage.setItem(LS.lang, arg);
+    addMsg('sys', 'Готово, дальше отвечаю на ' + LANGS[arg] + '.');
+    return true;
+  }
+
+  if (cmd === '/mode'){
+    if (!arg){ addMsg('sys', 'Режим: ' + (isFreeMode() ? 'без ограничений' : 'обычный') + '. Сменить: /mode free'); return true; }
+    if (arg !== 'free' && arg !== 'normal'){
+      addMsg('err', 'Режим «' + arg + '» не найден. Доступны: normal, free.');
+      return true;
+    }
+    state.mode = arg;
+    localStorage.setItem(LS.mode, arg);
+    renderPanel();
+    addMsg('sys', arg === 'free'
+      ? 'Режим без ограничений включён. Промт стал прямым. Если модель всё равно отказывает — переключись на Dolphin из блока «Модели без фильтров».'
+      : 'Обычный режим: промт персонажа без изменений.');
+    return true;
+  }
+
+  if (cmd === '/commands' || cmd === '/help'){
+    addMsg('sys', 'Команды: /stop — очистить историю и чат · /lang ru — язык ответов (/lang en, de, fr, es, it, uk, kk, zh, ja) · ' +
+      '/mode free — режим без ограничений (/mode normal) · /commands — этот список.');
+    return true;
+  }
+
+  return false;   // не команда — обычное сообщение
+}
+
+/* ============================================================
+   ФОРМИРОВАНИЕ ЗАПРОСА
+   ============================================================ */
+
+function systemMessage(){
+  const c = CHARACTERS[state.character];
+  const free = isFreeMode();
+  const body = c.parts
+    .filter(p => !p.soft || !free)   // soft-части вырезаются только в свободном режиме
+    .map(p => p.t)
+    .join('\n');
+  const lang = state.lang && state.lang !== 'ru' ? `\n\nОтвечай на языке: ${LANGS[state.lang]}.` : '';
+  const mode = free ? '\n\n' + FREE_MODE_RULE : '';
+  return body + mode + '\n\n' + FORMAT_RULE + lang;
+}
+function buildMessages(text){
+  return [{role:'system', content:systemMessage()}]
+    .concat(history)
+    .concat([{role:'user', content:text}]);
+}
+function normalizeUrl(url){
+  let u = (url || '').trim().replace(/\/+$/,'');
+  if (!u) return DEFAULTS.ollamaUrl;
+  if (!/^https?:\/\//i.test(u)) u = 'http://' + u;
+  return u;
+}
+
+/* ============================================================
+   ОБРАЩЕНИЯ К ИСТОЧНИКАМ
+   ============================================================ */
+
+class AppError extends Error{
+  constructor(message, status){ super(message); this.status = status; }
+}
+
+/* Ошибки, которые проходят сами: шлюз провайдера моргнул или не уложился по времени. */
+const TRANSIENT = new Set([408, 425, 429, 500, 502, 503, 504]);
+const RETRY_HINT = {
+  402:'Pollinations отклонил запрос на анонимном тарифе. Подожди минуту или смени источник — шлюз иногда путает запросы.',
+  408:'Сервер не успел ответить вовремя.',
+  425:'Сервер просит повторить позже.',
+  429:'Сработал лимит запросов. Подожди и попробуй ещё раз.',
+  500:'Внутренняя ошибка на стороне провайдера.',
+  502:'Шлюз провайдера не смог добраться до модели. Обычно временный сбой — сайт повторяет запрос сам.',
+  503:'Модель временно недоступна, идёт переключение на другой бэкенд.',
+  504:'Шлюз не дождался ответа от модели. Попробуй ещё раз или возьми модель полегче.'
+};
+
+async function callPollinations(messages, timeout){
+  const res = await fetch('https://text.pollinations.ai/openai', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:state.pollModel || DEFAULTS.pollModel, messages, stream:false}),
+    signal:timeout.signal
+  });
+  const data = await readJson(res, timeout);
+  return data.choices?.[0]?.message?.content ?? '';
+}
+
+async function callOpenRouter(messages, timeout){
+  if (!state.apiKey) throw new AppError('Нужен API-ключ OpenRouter. Вставь его в поле «API-ключ» и нажми «Сохранить». Ключ бесплатный: https://openrouter.ai');
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'Authorization':'Bearer ' + state.apiKey,
+      'HTTP-Referer':location.href,
+      'X-Title':'Омуймир'
+    },
+    body:JSON.stringify({
+      model:(state.orModel || DEFAULTS.orModel).trim(),
+      messages, stream:false, max_tokens:1200
+    }),
+    signal:timeout.signal
+  });
+  let data;
+  try {
+    data = await readJson(res, timeout);
+  } catch (e) {
+    if (/model|endpoint|not found|404|400/i.test(e.message))
+      throw new AppError(e.message + ' — проверь id модели в поле «Модель OpenRouter» (например, openrouter/free).');
+    throw e;
+  }
+  return data.choices?.[0]?.message?.content ?? '';
+}
+
+async function callOllama(messages, timeout){
+  const res = await fetch(normalizeUrl(state.ollamaUrl) + '/api/chat', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:(state.ollamaModel || DEFAULTS.ollamaModel).trim(),
+      messages, stream:false, options:{num_predict:1200}
+    }),
+    signal:timeout.signal
+  });
+  const data = await readJson(res, timeout);
+  if (data.error) throw new AppError(String(data.error));
+  return data.message?.content ?? '';
+}
+
+/* Разбор ответа: res.ok, JSON вместо HTML, понятные сообщения об ошибках. */
+async function readJson(res, timeout){
+  if (timeout.timedOut) throw new AppError('Превышено время ожидания.');
+
+  const raw = await res.text();
+
+  if (!res.ok){
+    // Пробуем достать текст ошибки провайдера, но не падаем на этом.
+    let detail = '';
+    try {
+      const d = JSON.parse(raw);
+      detail = d?.error?.message || d?.error || d?.message || '';
+      if (typeof detail !== 'string') detail = JSON.stringify(detail);
+    } catch (_) {
+      detail = raw.slice(0, 200);
+    }
+    // HTML-заглушку прокси пользователю показывать нечего — заменяем описанием.
+    if (/^\s*<(!doctype|html|\?xml)/i.test(detail)) detail = 'сервер вернул HTML-заглушку вместо объяснения';
+
+    if (res.status === 401 || res.status === 403) detail = detail || 'Ключ отклонён. Проверь API-ключ.';
+    if (res.status === 404) detail = detail || 'Модель не найдена на сервере.';
+
+    // Своё объяснение важнее текста провайдера: он часто отдаёт пустое тело.
+    const explain = RETRY_HINT[res.status];
+    const code = 'HTTP ' + res.status;
+    let text;
+    if (explain){
+      text = explain + ' [' + code + ']' + (detail ? ' Ответ сервера: ' + detail : '');
+    } else {
+      text = 'Ошибка ' + code + (detail ? ': ' + detail : ' — провайдер не объяснил причину.');
+    }
+    throw new AppError(text, res.status);
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch (_) {
+    if (/^\s*<(!doctype|html)/i.test(raw)){
+      throw new AppError('Сервер вернул не JSON (HTML вместо ответа). Обычно это прокси, капча или страница с ошибкой.');
+    }
+    throw new AppError('Сервер вернул не JSON: ' + raw.slice(0, 200));
+  }
+}
+
+const CALLERS = {pollinations:callPollinations, openrouter:callOpenRouter, ollama:callOllama};
+
+/* ============================================================
+   ОТПРАВКА
+   ============================================================ */
+
+function setBusy(v){
+  busy = v;
+  el.input.disabled = v;
+  el.send.disabled = v;
+  el.input.style.opacity = v ? '.6' : '1';
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function ask(text, attempt = 0){
+  const src = SOURCES[state.source];
+  const MAX_ATTEMPTS = 3;   // два повтора поверх первой попытки
+
+  // Пауза между запросами к Pollinations, иначе прилетает 429.
+  // Счётчик ведём только для источников с лимитом — Ollama никого не блокирует.
+  if (src.cooldown && attempt === 0){
+    const wait = Math.ceil((src.cooldown - (Date.now() - lastRequestAt)) / 1000);
+    if (wait > 0){
+      addMsg('err', 'Pollinations просит не чаще одного запроса в 15 секунд. Подожди ' + wait + ' с. ' +
+        'Если нужна скорость и без ограничений — переключись на Ollama с Dolphin.');
+      return;
+    }
+    lastRequestAt = Date.now();
+  }
+
+  setBusy(true);
+  const typing = showTyping();
+  const controller = new AbortController();
+  const timeout = {signal:controller.signal, timedOut:false};
+  const timer = setTimeout(() => { timeout.timedOut = true; controller.abort(); }, src.timeout);
+
+  try {
+    const answer = await CALLERS[state.source](buildMessages(text), timeout);
+    typing.remove();
+    if (!answer || !answer.trim()) throw new AppError('Модель вернула пустой ответ. Попробуй ещё раз или смени модель.');
+    history.push({role:'user', content:text}, {role:'assistant', content:answer.trim()});
+    addMsg('ai', answer.trim());
+  } catch (e) {
+    typing.remove();
+    const transient = TRANSIENT.has(e.status) && attempt < MAX_ATTEMPTS - 1;
+
+    if (transient){
+      // Шлюз моргнул — молча повторяем, не пугая сообщением об ошибке.
+      const delay = 1200 * (attempt + 1);
+      addMsg('sys', 'Провайдер ответил ' + e.status + '. Повторяю запрос через ' + (delay/1000) + ' с…');
+      clearTimeout(timer);
+      setBusy(false);
+      await sleep(delay);
+      return ask(text, attempt + 1);
+    }
+
+    if (e.name === 'AbortError'){
+      addMsg('err', timeout.timedOut
+        ? 'Модель не ответила за ' + Math.round(src.timeout / 1000) + ' с. Локальная модель может думать долго — попробуй ещё раз.'
+        : 'Запрос отменён.');
+    } else if (e instanceof TypeError){
+      addMsg('err', 'Сеть недоступна или запрос заблокирован браузером (CORS). Для Ollama проверь, что сервер запущен с OLLAMA_ORIGINS="*" и открыт по адресу ' + normalizeUrl(state.ollamaUrl));
+    } else {
+      const refusal = isFreeMode() &&
+        /i can't|i cannot|не могу|не могу помочь|as an ai|извин/i.test(e.message);
+      addMsg(refusal ? 'warn' : 'err', e.message || 'Неизвестная ошибка.');
+      if (refusal){
+        addMsg('warn', 'Модель отказала — значит фильтр зашит в неё. Промт тут не поможет: возьми Dolphin из блока «Модели без фильтров».');
+      }
+    }
+  } finally {
+    clearTimeout(timer);
+    setBusy(false);
+    el.input.focus();
+  }
+}
+
+function submit(){
+  if (busy) return;
+  const text = el.input.value.trim();
+  if (!text) return;
+  el.input.value = '';
+  autoGrow();
+
+  if (runCommand(text)) return;
+  if (text.length > 8000){
+    addMsg('err', 'Сообщение слишком длинное — больше 8000 символов.');
+    return;
+  }
+  addMsg('user', text);
+  ask(text);
+}
+
+/* ============================================================
+   СОБЫТИЯ
+   ============================================================ */
+
+function autoGrow(){
+  el.input.style.height = 'auto';
+  el.input.style.height = Math.min(el.input.scrollHeight, 180) + 'px';
+}
+
+el.form.addEventListener('submit', e => { e.preventDefault(); submit(); });
+
+el.input.addEventListener('input', autoGrow);
+el.input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); submit(); }
+});
+
+el.src.addEventListener('change', () => {
+  state.source = el.src.value;
+  saveState(); renderPanel();
+});
+
+el.char.addEventListener('change', () => {
+  state.character = el.char.value;
+  saveState(); renderPanel(); resetChat(true);
+  addMsg('sys', 'Персонаж сменён на «' + CHARACTERS[state.character].name + '», диалог начат заново.');
+});
+
+el.mode.addEventListener('change', () => {
+  state.mode = el.mode.value;
+  localStorage.setItem(LS.mode, state.mode);
+  renderPanel();
+  addMsg('sys', state.mode === 'free'
+    ? 'Режим без ограничений: промт стал прямым, ответы без нотаций.'
+    : 'Обычный режим: промт персонажа без изменений.');
+});
+
+el.saveKey.addEventListener('click', () => {
+  state.apiKey = el.key.value.trim();
+  localStorage.setItem(LS.key, state.apiKey);
+  addMsg('sys', state.apiKey ? 'Ключ сохранён в этом браузере.' : 'Поле ключа пустое — ключ удалён.');
+});
+
+el.delKey.addEventListener('click', () => {
+  state.apiKey = '';
+  el.key.value = '';
+  localStorage.removeItem(LS.key);
+  addMsg('sys', 'Ключ удалён из браузера.');
+});
+
+for (const [input, field, ls] of [[el.url,'ollamaUrl',LS.url], [el.model,'ollamaModel',LS.model],
+                                  [el.orModel,'orModel',LS.orModel]]){
+  input.addEventListener('change', () => {
+    state[field] = input.value.trim();
+    localStorage.setItem(ls, state[field]);
+    if (field === 'ollamaModel') renderPanel();
+  });
+}
+
+el.pullCopy.addEventListener('click', async () => {
+  const cmd = 'ollama pull ' + state.ollamaModel;
+  try {
+    await navigator.clipboard.writeText(cmd);
+    el.pullCopy.textContent = 'Скопировано';
+  } catch (_) {
+    el.pullCmd.textContent = cmd + '   (выдели и скопируй вручную)';
+    el.pullCopy.textContent = 'Скопируй вручную';
+  }
+  setTimeout(() => { el.pullCopy.textContent = 'Копировать'; }, 1800);
+});
+
+el.reset.addEventListener('click', () => {
+  if (!confirm('Сбросить все настройки, удалить ключ и очистить диалог?')) return;
+  Object.values(LS).forEach(k => localStorage.removeItem(k));
+  state = {...DEFAULTS};
+  renderPanel();
+  buildModelList(el.localList, FREE_LOCAL, 'ollama');
+  buildModelList(el.cloudList, FREE_CLOUD, 'openrouter');
+  resetChat(true);
+  addMsg('sys', 'Настройки сброшены к исходным.');
+});
+
+/* ============================================================
+   СТАРТ
+   ============================================================ */
+
+buildModelList(el.localList, FREE_LOCAL, 'ollama');
+buildModelList(el.cloudList, FREE_CLOUD, 'openrouter');
+renderPanel();
+resetChat(true);
+autoGrow();
+el.input.focus();
+</script>
+</body>
+</html>
